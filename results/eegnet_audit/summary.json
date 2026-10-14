@@ -1,0 +1,23 @@
+{
+  "run_id": "BNCI2014_001_ccebe0c6749374ab",
+  "engine_sha256": "42ba021e26724e3e0d18ec77d1df765cc438092cf487c2eb1b94b8d5a56aacde",
+  "main_fits": 45,
+  "pilot_fits": 36,
+  "epochs_per_fit": 100,
+  "updates_per_fit": 800,
+  "validation_checkpoints": 20,
+  "selection_recomputed": true,
+  "finite_weights_and_max_norm_verified": true,
+  "batchnorm_updates_verified": true,
+  "target_labels_used_for_audit": false,
+  "main_best_epoch_median": 80.0,
+  "main_best_epoch_at_least_90": 20,
+  "main_best_epoch_100": 16,
+  "main_minimum_validation_loss_at_100": 20,
+  "main_late_validation_ba_improved": 13,
+  "main_mean_selected_validation_ba": 57.453703703703724,
+  "main_mean_final_validation_ba": 55.27777777777778,
+  "main_median_training_loss_decrease": 0.6023523844778538,
+  "interpretation": "Selection and constraint checks passed. Late improvements describe the bounded training budget; these histories do not establish convergence or that a longer budget would improve target-session performance.",
+  "limitations": "No hyperparameter changes, retraining, or target-dependent selection. This independently written EEGNet port uses the common study optimizer and four source-validation candidates; it is not a tuned benchmark ceiling."
+}

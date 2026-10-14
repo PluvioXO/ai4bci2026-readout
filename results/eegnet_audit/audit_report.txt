@@ -1,0 +1,9 @@
+EEGNet source-validation audit
+
+All 81 fits (45 main, 36 pilot) completed 800 updates and 20 source-validation checks. Recomputed checkpoint choices, all nine optimizer-grid winners, finite weights, max-norm constraints, and BatchNorm update counts agree with the archive.
+
+Main best epoch: median 80; 20/45 at epoch 90 or later; 16/45 at epoch 100. 20/45 have their minimum validation loss at epoch 100. 13/45 improve their best validation accuracy in the final 25 epochs.
+
+Selection and constraint checks passed. Late improvements describe the bounded training budget; these histories do not establish convergence or that a longer budget would improve target-session performance.
+
+No hyperparameter changes, retraining, or target-dependent selection. This independently written EEGNet port uses the common study optimizer and four source-validation candidates; it is not a tuned benchmark ceiling.

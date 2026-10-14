@@ -1,0 +1,34 @@
+{
+  "candidates": [
+    {
+      "order": 0,
+      "selected_features": 8,
+      "validation_ba": 37.50000000000001,
+      "validation_log_loss": 1.3249270635305892
+    },
+    {
+      "order": 1,
+      "selected_features": 16,
+      "validation_ba": 39.583333333333336,
+      "validation_log_loss": 1.3240477331237424
+    },
+    {
+      "order": 2,
+      "selected_features": 32,
+      "validation_ba": 47.91666666666667,
+      "validation_log_loss": 1.4504196376553633
+    },
+    {
+      "order": 3,
+      "selected_features": 64,
+      "validation_ba": 50.0,
+      "validation_log_loss": 1.7615193886718712
+    }
+  ],
+  "fit_seconds": 7.420894691000001,
+  "model_sha256": "466fb212e676ce207fc3d935c7348a6d4e3a4444cb3a17a14aa0edc31855db45",
+  "selected_features": 64,
+  "source_sha256": "4dc3be1b0d60279134d1220323c73c68cf73799339a7fb224087a3c560a9a7e2",
+  "subject": 6,
+  "validation_ba": 50.0
+}

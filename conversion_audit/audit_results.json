@@ -1,0 +1,171 @@
+{
+  "engine_sha256": "42ba021e26724e3e0d18ec77d1df765cc438092cf487c2eb1b94b8d5a56aacde",
+  "source_and_notebook_match": true,
+  "all_E1_cells_recomputed": 675,
+  "recurrence_reference_passed": true,
+  "source_only_scaler_verified": true,
+  "weights_unchanged": true,
+  "replay_scope": "Participant 1, seed 0; SAST, compute-matched ordinary, direct-hard; CPU",
+  "replay_environment": {
+    "python": "3.12.12",
+    "torch": "2.14.0",
+    "numpy": "1.26.4",
+    "scipy": "1.14.1",
+    "pandas": "2.2.3",
+    "matplotlib": "3.9.4"
+  },
+  "archived_environment": {
+    "torch": "2.11.0+cu130",
+    "python": "3.13.15"
+  },
+  "all_sampled_predictions_match": true,
+  "replays": [
+    {
+      "method": "sast",
+      "mode": "raw",
+      "subject": 1,
+      "seed": 0,
+      "ba": 25.34722222222222,
+      "prediction_mismatches": 0,
+      "feature_max_abs_difference": 5.960464477539063e-08,
+      "L2_mean": 0.2682473957538605,
+      "L2_mean_trial_std": 0.08786201477050781,
+      "L2_zero_fraction": 0.4116753472222222
+    },
+    {
+      "method": "sast",
+      "mode": "calibrated",
+      "subject": 1,
+      "seed": 0,
+      "ba": 47.916666666666664,
+      "prediction_mismatches": 0,
+      "feature_max_abs_difference": 2.9802322387695312e-08,
+      "L2_mean": 0.08179080486297607,
+      "L2_mean_trial_std": 0.052129797637462616,
+      "L2_zero_fraction": 0.5870225694444444
+    },
+    {
+      "method": "sast",
+      "mode": "continuous",
+      "subject": 1,
+      "seed": 0,
+      "ba": 53.47222222222222,
+      "prediction_mismatches": 0,
+      "feature_max_abs_difference": 4.76837158203125e-07,
+      "L2_mean": 0.3498214781284332,
+      "L2_mean_trial_std": 0.2565767168998718,
+      "L2_zero_fraction": 0.0
+    },
+    {
+      "method": "matched",
+      "mode": "raw",
+      "subject": 1,
+      "seed": 0,
+      "ba": 25.0,
+      "prediction_mismatches": 0,
+      "feature_max_abs_difference": 5.960464477539063e-08,
+      "L2_mean": 0.28631770610809326,
+      "L2_mean_trial_std": 0.0746772289276123,
+      "L2_zero_fraction": 0.4180772569444444
+    },
+    {
+      "method": "matched",
+      "mode": "calibrated",
+      "subject": 1,
+      "seed": 0,
+      "ba": 35.76388888888889,
+      "prediction_mismatches": 0,
+      "feature_max_abs_difference": 5.960464477539063e-08,
+      "L2_mean": 0.1214652881026268,
+      "L2_mean_trial_std": 0.05115938186645508,
+      "L2_zero_fraction": 0.4810112847222222
+    },
+    {
+      "method": "matched",
+      "mode": "continuous",
+      "subject": 1,
+      "seed": 0,
+      "ba": 55.55555555555556,
+      "prediction_mismatches": 0,
+      "feature_max_abs_difference": 6.556510925292969e-07,
+      "L2_mean": 0.35964223742485046,
+      "L2_mean_trial_std": 0.25114238262176514,
+      "L2_zero_fraction": 0.0
+    },
+    {
+      "method": "direct",
+      "mode": "raw",
+      "subject": 1,
+      "seed": 0,
+      "ba": 57.986111111111114,
+      "prediction_mismatches": 0,
+      "feature_max_abs_difference": 5.960464477539063e-08,
+      "L2_mean": 0.3060998320579529,
+      "L2_mean_trial_std": 0.24998296797275543,
+      "L2_zero_fraction": 0.2928602430555556
+    },
+    {
+      "method": "direct",
+      "mode": "calibrated",
+      "subject": 1,
+      "seed": 0,
+      "ba": 57.986111111111114,
+      "prediction_mismatches": 0,
+      "feature_max_abs_difference": 5.960464477539063e-08,
+      "L2_mean": 0.3060998320579529,
+      "L2_mean_trial_std": 0.24998296797275543,
+      "L2_zero_fraction": 0.2928602430555556
+    }
+  ],
+  "exploratory_alignment": [
+    {
+      "method": "sast",
+      "subject": 1,
+      "seed": 0,
+      "diagnostic": "raw",
+      "ba": 25.34722222222222,
+      "prediction_classes": 2
+    },
+    {
+      "method": "sast",
+      "subject": 1,
+      "seed": 0,
+      "diagnostic": "source_mean_alignment",
+      "ba": 38.88888888888889,
+      "prediction_classes": 3
+    },
+    {
+      "method": "sast",
+      "subject": 1,
+      "seed": 0,
+      "diagnostic": "source_mean_and_scale_alignment",
+      "ba": 47.56944444444444,
+      "prediction_classes": 4
+    },
+    {
+      "method": "matched",
+      "subject": 1,
+      "seed": 0,
+      "diagnostic": "raw",
+      "ba": 25.0,
+      "prediction_classes": 2
+    },
+    {
+      "method": "matched",
+      "subject": 1,
+      "seed": 0,
+      "diagnostic": "source_mean_alignment",
+      "ba": 38.54166666666667,
+      "prediction_classes": 2
+    },
+    {
+      "method": "matched",
+      "subject": 1,
+      "seed": 0,
+      "diagnostic": "source_mean_and_scale_alignment",
+      "ba": 45.486111111111114,
+      "prediction_classes": 4
+    }
+  ],
+  "limitation": "No retraining; full forward replay is a three-checkpoint sample. Source-moment alignment is post-hoc and not a confirmatory result."
+}

@@ -1,0 +1,80 @@
+{
+  "config": {
+    "bands": [
+      [
+        4,
+        8
+      ],
+      [
+        8,
+        12
+      ],
+      [
+        12,
+        16
+      ],
+      [
+        16,
+        20
+      ],
+      [
+        20,
+        24
+      ],
+      [
+        24,
+        28
+      ],
+      [
+        28,
+        32
+      ],
+      [
+        32,
+        36
+      ],
+      [
+        34,
+        38
+      ]
+    ],
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 20261012,
+    "classifier": "multiclass LDA, lsqr solver, automatic shrinkage",
+    "csp_components": 4,
+    "csp_shrinkage": 0.1,
+    "feature_counts": [
+      8,
+      16,
+      32,
+      64
+    ],
+    "feature_selection_seed": 20261012,
+    "filter_bank": "Fourth-order Butterworth, forward/backward within each epoch",
+    "front_end": "Original run-level 4\u201338 Hz / cue 0\u20134 s / 125 Hz; source scaling",
+    "split": "Session 1 runs 1\u20135 fit; run 6 select; all session 2 test",
+    "status": "Post-study exploratory external baseline, not a new primary contrast",
+    "subjects": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "tuning": "Four feature counts; no refit on validation; no target fitting"
+  },
+  "engine_sha256": "4c694da2ab6d74d1dcb8a7428b5d240bf6572c2a71aea9d91f45403645722cd3",
+  "python": "3.13.16",
+  "reference_sha256": "733865525e2e35c009d4fb18a6e5aeb763505db5146164ea43e22723ea701bff",
+  "software": {
+    "mne": "1.10.2",
+    "numpy": "2.1.3",
+    "pandas": "2.2.3",
+    "scikit-learn": "1.7.2",
+    "scipy": "1.16.3"
+  }
+}

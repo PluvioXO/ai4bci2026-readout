@@ -1,0 +1,7 @@
+method,subject,seed,diagnostic,ba,prediction_classes
+sast,1,0,raw,25.34722222222222,2
+sast,1,0,source_mean_alignment,38.88888888888889,3
+sast,1,0,source_mean_and_scale_alignment,47.56944444444444,4
+matched,1,0,raw,25.0,2
+matched,1,0,source_mean_alignment,38.54166666666667,2
+matched,1,0,source_mean_and_scale_alignment,45.486111111111114,4

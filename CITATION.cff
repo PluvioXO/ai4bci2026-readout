@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "Please cite the paper and the release version when using this research code."
+title: "Recoverable Readout Mismatch in Smooth-to-Spiking EEG Decoding"
+type: software
+authors:
+  - family-names: Nicholson
+    given-names: Maximilian
+version: 1.0.0
+date-released: 2026-10-15
+repository-code: "https://github.com/PluvioXO/ai4bci2026-readout"
+license: MIT

@@ -1,0 +1,88 @@
+{
+  "analysis": "Post-study exploratory replication; design fixed before its target evaluation",
+  "architecture": "single-block depthwise LIF; temporal kernel 63; 8 temporal filters; 16 depthwise spatial filters; average pool 8; GroupNorm(1); LIF leak .9, threshold 1; four temporal-bin averages; linear 64-to-4 head",
+  "combined_engine_sha": "30e3033eb56b2f8f6cebffd04da318ac537dbebb02f05250ea385f08112855c8",
+  "comparison": "Original smooth and raw-spike heads versus separately source-fitted ridge heads",
+  "config": {
+    "batch_size": 32,
+    "bootstrap": 10000,
+    "budgets": [
+      0,
+      4,
+      8,
+      12
+    ],
+    "epochs": 100,
+    "leak": 0.9,
+    "learning_rates": [
+      0.0003,
+      0.001
+    ],
+    "pilot_seed": 1000,
+    "radii": [
+      0.05,
+      0.2
+    ],
+    "ridge_alphas": [
+      0.001,
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0
+    ],
+    "samples": 500,
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "subjects": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "synthetic": false,
+    "thresholds": [
+      0.25,
+      0.5,
+      0.75,
+      1.0,
+      1.25,
+      1.5,
+      2.0,
+      3.0
+    ],
+    "weight_decays": [
+      0.0001,
+      0.001
+    ],
+    "widths": [
+      16,
+      32
+    ]
+  },
+  "independent_dataset": false,
+  "limitations": "Same nine participants and dataset; no replication of SAST superiority; offline preprocessing and normalization; not preregistered",
+  "original_engine_sha": "42ba021e26724e3e0d18ec77d1df765cc438092cf487c2eb1b94b8d5a56aacde",
+  "replication_sha": "400b8140b071ce9819ae39e1f0b3c390810be0e9222932a5d952f7fa16b6f24b",
+  "selection": "All participant training and source-only ridge selection finish before target loading",
+  "software": {
+    "matplotlib": "3.9.4",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "python": "3.12.12",
+    "scipy": "1.14.1",
+    "torch": "2.14.0"
+  },
+  "training": "Ordinary AdamW only; original source-validation optimizer grid and checkpoint rule"
+}

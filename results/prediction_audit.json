@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "original_run": "BNCI2014_001_ccebe0c6749374ab",
+  "prediction_exports": 270,
+  "saved_prediction_rows": 1231200,
+  "verified_cells": {
+    "E1": 675,
+    "E2": 1350,
+    "E3": 2700
+  },
+  "trial_ids_unique_within_cells": true,
+  "fixed_E3_test_runs_verified": true,
+  "cue_offset_verified": true,
+  "artifact_free_cells_recomputed": true,
+  "limitation": "Export consistency only; no retraining or full forward replay"
+}

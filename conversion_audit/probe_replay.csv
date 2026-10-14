@@ -1,0 +1,17 @@
+method,mode,layer,ba,alpha
+sast,raw,1,55.90277777777778,10.0
+sast,raw,2,57.638888888888886,10.0
+sast,calibrated,1,50.69444444444444,100.0
+sast,calibrated,2,53.81944444444444,1000.0
+sast,continuous,1,55.90277777777778,10.0
+sast,continuous,2,55.55555555555556,1000.0
+matched,raw,1,53.125,0.1
+matched,raw,2,56.94444444444444,10.0
+matched,calibrated,1,50.69444444444444,100.0
+matched,calibrated,2,58.68055555555556,0.1
+matched,continuous,1,56.25,0.1
+matched,continuous,2,57.29166666666667,1.0
+direct,raw,1,58.68055555555556,100.0
+direct,raw,2,56.94444444444444,1.0
+direct,calibrated,1,58.68055555555556,100.0
+direct,calibrated,2,56.94444444444444,1.0

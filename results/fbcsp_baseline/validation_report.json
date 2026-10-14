@@ -1,0 +1,44 @@
+{
+  "status": "passed",
+  "archive": "FBCSP_LDA_fb436529d768932f.zip",
+  "archive_sha256": "e0f66726767e70d703f36e80b0efa9dc7586c9ccea1979f4981d05f582307629",
+  "run_id": "FBCSP_LDA_fb436529d768932f",
+  "engine_sha256": "4c694da2ab6d74d1dcb8a7428b5d240bf6572c2a71aea9d91f45403645722cd3",
+  "engine_matches_locally_tested": true,
+  "participants": 9,
+  "target_predictions_checked": 2592,
+  "checks": [
+    "Archive CRC and safe paths",
+    "Engine/reference/model/selection hashes",
+    "Source 240/48 split and all target runs",
+    "Validation-only candidate selection",
+    "All trial-derived BA and artifact-free BA",
+    "Exact original EEGNet reference",
+    "Independent participant bootstrap and paired differences"
+  ],
+  "results": [
+    {
+      "comparison": "FBCSP-style / shrinkage LDA",
+      "mean": 61.80555555555556,
+      "low": 52.9320987654321,
+      "high": 70.06172839506172
+    },
+    {
+      "comparison": "EEGNet (original five-seed mean)",
+      "mean": 54.14351851851852,
+      "low": 43.83487654320987,
+      "high": 64.21296296296296
+    },
+    {
+      "comparison": "FBCSP minus EEGNet (percentage points)",
+      "mean": 7.662037037037036,
+      "low": 3.665123456790122,
+      "high": 11.906057098765432
+    }
+  ],
+  "limitations": [
+    "Fitted models were hash-checked, not unpickled or independently retrained for all nine participants.",
+    "Raw source/target checksum replay used the available participant-1 cache; other raw files were not redownloaded.",
+    "This audit checks recorded split/code consistency; it cannot establish the researcher's full historical tuning process."
+  ]
+}

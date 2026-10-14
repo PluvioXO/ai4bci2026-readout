@@ -1,0 +1,9 @@
+{
+  "device": "cpu",
+  "platform": "macOS arm64",
+  "source_workers": 3,
+  "torch_threads_per_worker": 2,
+  "main_process_torch_threads": 2,
+  "gpu_benchmarked": false,
+  "run_completed_at": "2026-10-14T23:29:52.478394+00:00"
+}

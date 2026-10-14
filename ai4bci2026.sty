@@ -1,0 +1,58 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ai4bci2026}[2026/07/14 AI4BCI 2026 extended abstract style]
+
+\RequirePackage[margin=0.75in]{geometry}
+\RequirePackage{times}
+\RequirePackage{microtype}
+\RequirePackage{graphicx}
+\RequirePackage{booktabs}
+\RequirePackage{xcolor}
+\RequirePackage{titlesec}
+\RequirePackage{enumitem}
+\RequirePackage{hyperref}
+
+\definecolor{ai4bciblack}{HTML}{111111}
+\definecolor{ai4bcigray}{HTML}{555555}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=ai4bciblack,
+  citecolor=ai4bciblack,
+  urlcolor=ai4bcigray
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{0pt}
+\setlist{nosep,leftmargin=*}
+
+\titleformat{\section}
+  {\large\bfseries}
+  {\thesection}
+  {0.6em}
+  {}
+
+\titleformat{\subsection}
+  {\normalsize\bfseries}
+  {\thesubsection}
+  {0.6em}
+  {}
+
+\titlespacing*{\section}{0pt}{8pt}{3pt}
+\titlespacing*{\subsection}{0pt}{6pt}{2pt}
+
+\renewcommand{\maketitle}{
+  \begin{center}
+    {\LARGE\bfseries \@title \par}
+    \vspace{0.55em}
+    {\normalsize \@author \par}
+  \end{center}
+  \vspace{-0.5em}
+}
+
+\renewenvironment{abstract}
+  {\section*{Abstract}\small}
+  {\normalsize\vspace{0.2em}}
+
+\pagestyle{plain}

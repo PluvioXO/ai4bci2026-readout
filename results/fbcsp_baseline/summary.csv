@@ -1,0 +1,4 @@
+comparison,mean,low,high,n_subjects,complete_nine_subjects
+FBCSP-style / shrinkage LDA,61.80555555555556,52.9320987654321,70.06172839506172,9,True
+EEGNet (original five-seed mean),54.14351851851852,43.83487654320987,64.21296296296296,9,True
+FBCSP minus EEGNet (percentage points),7.662037037037036,3.665123456790122,11.906057098765432,9,True

@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "participants": 9,
+  "seeds": 5,
+  "main_fits": 45,
+  "tuning_fits": 36,
+  "prediction_records": 12960,
+  "outcome_predictions": 51840,
+  "source_files_hash_checked": 180,
+  "score_cells_recomputed": 180,
+  "bootstrap_intervals_recomputed": 8,
+  "target_trial_ids_labels_and_artifacts_match_classical_reference": true,
+  "source_and_target_recording_checksums_match_classical_reference": true,
+  "original_engine_sha256": "42ba021e26724e3e0d18ec77d1df765cc438092cf487c2eb1b94b8d5a56aacde",
+  "replication_engine_sha256": "400b8140b071ce9819ae39e1f0b3c390810be0e9222932a5d952f7fa16b6f24b",
+  "limitations": "Export and source-lock audit; not independent retraining or full forward replay. Same dataset and participants; ordinary training only."
+}

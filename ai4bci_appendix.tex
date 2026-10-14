@@ -1,0 +1,644 @@
+% Standalone companion to the two-page AI4BCI submission.
+% Original study, 13 October 2026; classical baseline added 14 October 2026.
+% Compile twice with pdflatex.
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{times,microtype,amsmath,amssymb,booktabs,enumitem,xcolor,hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\hypersetup{colorlinks=true,urlcolor=black,linkcolor=black,citecolor=black,
+pdftitle={Companion Appendix: Recoverable Readout Mismatch in Smooth-to-Spiking EEG Decoding},
+pdfauthor={Maximilian Nicholson}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlist{nosep,leftmargin=*}
+\renewcommand{\thetable}{A\arabic{table}}
+
+\begin{document}
+\begin{center}
+{\Large\bfseries Companion Appendix:\\
+Recoverable Readout Mismatch in\\Smooth-to-Spiking EEG Decoding\par}
+\medskip
+Maximilian Nicholson --- 14 October 2026
+\end{center}
+
+\textbf{Scope.} This document records the completed EEG study, supporting
+analyses, and a subsequent implementation audit. The original primary
+comparison remains calibrated SAST versus compute-matched ordinary training;
+the readout analyses were planned secondary outcomes. The study was not
+preregistered, and the narrative emphasis on recoverable readout mismatch
+was chosen after inspecting the results. The source-moment diagnostic in
+Appendix~\ref{sec:audit} was added after the main study.
+A filter-bank common spatial pattern (FBCSP)-style reference was also added after the original run
+and is reported separately in Appendix~\ref{sec:fbcsp}.
+
+The \href{https://www.ai4bci.com/#cfp}{AI4BCI call} limits the submission to two
+pages including references. This companion is kept separate and is not
+assumed to be an accepted supplement. The main PDF is independently readable.
+
+\appendix
+\section{Data and neural dynamics}
+
+\textbf{Dataset and partitions.} BCI Competition IV 2a, distributed as
+BNCI2014\_001, contains nine participants and four motor-imagery classes
+(left hand, right hand, feet, tongue) \citep{brunner}. Each of two sessions
+has six runs of 48 trials, with 12 trials per class in each run. Only the
+22 EEG channels enter the models; the three EOG channels are excluded.
+All artifact-marked trials are retained. The artifact-free sensitivity
+evaluates the same fitted models on the unmarked subset.
+
+\begin{center}\small
+\begin{tabular}{llll}
+\toprule
+Partition & Session / runs & Trials/person & Use \\
+\midrule
+Source training & 1 / 1--5 & 240 & Weights and preprocessing \\
+Source validation & 1 / 6 & 48 & Settings and checkpoints \\
+E1/E2 test & 2 / 1--6 & 288 & Conversion and probes \\
+E3 calibration pool & 2 / 1 & 48 & Labeled session adaptation \\
+E3 test & 2 / 2--6 & 240 & Fixed at every label budget \\
+\bottomrule
+\end{tabular}\end{center}
+
+\textbf{Preprocessing.} MATLAB trial markers precede the cue by two seconds;
+after converting to zero-based indexing, extraction adds 500 samples and
+takes 1,000 samples at 250\,Hz. A fourth-order Butterworth 4--38\,Hz SOS filter
+is applied forward/backward separately within each run, using odd padding
+and SciPy's default pad length. Polyphase downsampling by two, with a Kaiser
+window ($\beta=5$), produces $22\times500$ inputs covering 0--4\,s after cue
+onset. Channel means and standard deviations are estimated from the 240
+source-training epochs only. The forward/backward filter, padded temporal
+convolutions, and across-time GroupNorm make this an offline evaluation,
+distinct from the original competition's causal continuous-output scoring.
+
+\textbf{Shared spiking-family architecture.} An eight-filter temporal
+convolution (kernel $1\times31$) feeds spatial mixing across 22 electrodes
+to 16 channels, average pooling by four, GroupNorm(1), and the first
+leaky integrate-and-fire (LIF) block. A temporal convolution with kernel~5
+maps 16 to 32 channels, followed by GroupNorm(1) and the second LIF block.
+There are 125 time steps (32\,ms each); a linear 32-to-4 head reads their
+mean activity. The model has 5,900 trainable parameters, no dropout, and no
+batch running statistics. For each block,
+\[
+u_t=0.9u_{t-1}+I_t-\theta z_{t-1},\qquad
+z_t=\begin{cases}
+\tfrac12+\arctan(u_t-\theta)/\pi,&\text{smooth},\\
+\mathbf{1}[u_t\geq\theta],&\text{hard}.
+\end{cases}
+\]
+Initial voltage and activity are zero for each trial and each forward pass.
+Raw conversion retains $\theta=1$ and all trained parameters. Changing
+$z_t$ changes the subsequent reset feedback even though the recurrence
+equation is unchanged. Direct-hard training uses hard forward activity
+with the arctan derivative in the backward pass, including reset paths.
+
+\clearpage
+\section{Training, inference, and the original primary result}
+
+Ordinary smooth training, same-batch SAM \citep{foret}, independent-batch SAST
+\citep{nicholson}, and direct-hard training share architecture and initialization
+for each participant/seed. SAM reuses one minibatch for ascent and descent;
+SAST uses independently sampled minibatches. Original parameters are restored
+before each base-optimizer update. The EEGNet-8,2 reference \citep{lawhern} is
+an independent PyTorch implementation with a 32-sample temporal kernel,
+depthwise spatial filters, separable temporal convolution, batch normalization,
+ELU, pooling by 4/8, and dropout 0.5. Spatial and classifier max-norm limits
+are 1 and 0.25. It has 2,164 parameters and uses PyTorch initialization and
+the common optimizer, rather than reproducing the paper's full training
+pipeline.
+
+\textbf{Optimization and selection.} AdamW uses batches of 32 sampled with
+replacement, 100 epochs of eight updates (200 epochs for matched ordinary),
+and cosine decay to 1\% of the initial rate. Checkpoints are evaluated at 20
+equally spaced positions in each method's budget, selected by native-forward
+validation BA and then loss; all prescribed updates run. There is no gradient
+clipping, mixed precision, or TF32. Each participant/method has four tuning
+candidates on pilot seed 1000: learning rate $\{0.0003,0.001\}$ crossed with
+radius $\{0.05,0.2\}$ at weight decay 0.0001 for SAM/SAST, or weight decay
+$\{0.0001,0.001\}$ for the other methods. Ties between candidates use validation
+loss and then candidate order. Main seeds are 0--4. All 216 pilot fits and
+270 main fits completed before target-session evaluation.
+
+\begin{table}[h]
+\centering\small
+\caption{Recorded main-fit compute on NVIDIA L4; means over 45 fits.
+Time covers training and its validation, excluding data preparation, search,
+and post-training analysis.}
+\begin{tabular}{lrrr}
+\toprule
+Method & Optimizer updates & Gradient evaluations & Mean seconds \\
+\midrule
+% BEGIN GENERATED COST ROWS
+Ordinary & 800 & 800 & 69.8 \\
+Ordinary $2\times$ & 1600 & 1600 & 139.2 \\
+SAM & 800 & 1600 & 139.4 \\
+SAST & 800 & 1600 & 139.7 \\
+Direct hard & 800 & 800 & 84.7 \\
+EEGNet & 800 & 800 & 3.8 \\
+% END GENERATED COST ROWS
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Threshold calibration.} One threshold shared by both blocks is
+selected from $\{0.25,0.5,0.75,1,1.25,1.5,2,3\}$ using source-validation BA.
+Ties favor the closest value to 1, then the smaller value. Calibration
+changes both firing threshold and reset magnitude. Direct-hard receives
+the same calibration. The maximum grid value is selected in 17/45 ordinary,
+18/45 matched, 12/45 SAM, and 14/45 SAST runs; conclusions concern this finite
+grid, not optimal possible calibration.
+
+\textbf{Inference.} BA is the unweighted mean of four class recalls.
+Five seeds are averaged within each participant before computing means and
+10,000 percentile bootstrap resamples (random seed 20261012). Contrasts are
+paired within participant; the sampling unit is the participant ($n=9$).
+Intervals are not corrected for the multiple secondary comparisons.
+The primary effect, calibrated SAST minus calibrated matched ordinary,
+is $-0.42$ pp, 95\% CI $[-2.88,2.67]$. The exact $2^9$ sign-flip sensitivity
+test gives $p=0.8164$, conditional on sign exchangeability. Restricting
+evaluation to artifact-free trials gives $-0.32$ pp $[-2.87,2.87]$.
+
+\begin{center}\small
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+Participant & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 \\
+\midrule
+% BEGIN GENERATED PRIMARY ROW
+Difference (pp) & $+9.72$ & $+1.87$ & $-0.21$ & $+1.25$ & $-2.50$ & $-4.51$ & $-2.64$ & $-1.04$ & $-5.69$ \\
+% END GENERATED PRIMARY ROW
+\bottomrule
+\end{tabular}\end{center}
+The interval includes meaningful effects in either direction; it does not
+establish equivalence. Neither this comparison nor the training algorithm
+alone identifies a causal effect of parameter-space flatness.
+
+\clearpage
+\section{Conversion loss, readout recovery, and representation alignment}
+
+\textbf{Matched probe construction.} Each mode and layer receives a separate
+ridge classifier on time-averaged features. Source-training feature means and
+standard deviations (floored at $10^{-6}$) define the scaler. A centered
+least-squares fit to one-hot labels includes an unpenalized intercept, with
+penalty $\alpha\in\{0.001,0.01,0.1,1,10,100,1000\}$ chosen by source-validation
+BA; ties favor larger $\alpha$. All modes use the same 240 fitting and 48
+validation trials. The 288 target trials are used only for evaluation.
+The final-layer raw-versus-smooth probe contrast and its paired interval
+were calculated during the final analysis from the planned probe outputs.
+
+\begin{table}[h]
+\centering\small\setlength{\tabcolsep}{4pt}
+\caption{Within-checkpoint conversion loss and degenerate predictions.
+Positive losses mean that smooth evaluation is more accurate. Collapse is
+defined as predicting one class for all 288 target trials, out of 45 fits.}
+\begin{tabular}{lcccc}
+\toprule
+& \multicolumn{2}{c}{Smooth minus spiking BA, pp [95\% CI]}
+& \multicolumn{2}{c}{Single-class fits} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Method & Raw & Calibrated & Raw & Calibrated \\
+\midrule
+% BEGIN GENERATED CONVERSION ROWS
+Ordinary & 15.97 [8.86, 23.43] & 8.54 [4.96, 12.26] & 20 & 4 \\
+Ordinary $2\times$ & 17.21 [10.22, 24.34] & 9.08 [4.77, 13.57] & 19 & 4 \\
+SAM & 12.08 [5.25, 19.37] & 5.27 [1.99, 8.97] & 12 & 5 \\
+SAST & 13.56 [7.13, 20.40] & 6.43 [3.29, 9.87] & 13 & 3 \\
+% END GENERATED CONVERSION ROWS
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering\small\setlength{\tabcolsep}{4pt}
+\caption{Final-layer linear probes: BA (\%) and paired effects (pp).
+Recovery is raw-probe minus raw-original-head accuracy. All refitting uses
+source-session labels only.}
+\begin{tabular}{lrrrr}
+\toprule
+Method & Smooth probe & Raw probe & Recovery [95\% CI] & Raw $-$ smooth [95\% CI] \\
+\midrule
+% BEGIN GENERATED PROBE ROWS
+Ordinary & 43.23 & 41.13 & 15.86 [9.23, 22.93] & -2.09 [-3.09, -1.08] \\
+Ordinary $2\times$ & 43.67 & 42.37 & 17.04 [10.57, 23.46] & -1.30 [-2.35, -0.33] \\
+SAM & 40.93 & 38.69 & 13.16 [6.28, 20.56] & -2.25 [-3.02, -1.55] \\
+SAST & 41.91 & 40.53 & 14.62 [8.26, 21.37] & -1.37 [-2.03, -0.71] \\
+% END GENERATED PROBE ROWS
+\bottomrule
+\end{tabular}
+\end{table}
+
+Refitting smooth features also improves accuracy: ordinary $+1.98$ pp,
+matched ordinary $+1.13$ pp, SAM $+3.32$ pp, and SAST $+2.44$ pp.
+This control limits how much of raw-spike recovery can be specifically
+attributed to repairing conversion. The remaining negative raw-minus-smooth
+probe contrasts support a residual loss of linear decodability under the
+chosen readout family; they do not establish loss of all task information.
+Calibrated-spike final-layer probe means are 40.27\%, 41.77\%, 38.94\%,
+and 40.59\% in the same method order. Direct-hard raw features reach 44.30\%
+with a ridge head; EEGNet features reach 54.88\%.
+
+\textbf{Geometric similarity.} Linear centered kernel alignment (CKA)
+\citep{kornblith} compares paired smooth and hard features on the target
+trials, centered across trials. For centered feature matrices $X,Y$,
+\[
+\mathrm{CKA}(X,Y)=\frac{\|X^\top Y\|_F^2}
+{\|X^\top X\|_F\,\|Y^\top Y\|_F}.
+\]
+A degenerate denominator is left undefined.
+Final-layer CKA can remain high despite collapsed original-head predictions.
+
+\begin{center}\small\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrrrr}
+\toprule
+& \multicolumn{2}{c}{Layer 1 CKA} & \multicolumn{2}{c}{Layer 2 CKA} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Method & Raw & Calibrated & Raw & Calibrated \\
+\midrule
+% BEGIN GENERATED CKA ROWS
+Ordinary & 0.992 & 0.981 & 0.903 & 0.890 \\
+Ordinary $2\times$ & 0.994 & 0.985 & 0.876 & 0.879 \\
+SAM & 0.947 & 0.935 & 0.801 & 0.823 \\
+SAST & 0.986 & 0.983 & 0.900 & 0.914 \\
+% END GENERATED CKA ROWS
+\bottomrule
+\end{tabular}\end{center}
+SAST final-layer raw CKA is 0.900 [0.865, 0.928], and calibrated CKA is
+0.914 [0.883, 0.935]. These are descriptive geometric measures; high CKA
+does not establish preserved decisions, identical dynamics, or equivalence.
+
+\clearpage
+\section{Limited-label target-session adaptation}
+
+E3 is a planned secondary experiment with a different test partition from
+E1/E2. All of target run~1 is reserved for calibration at every budget,
+including zero. Nested calibration sets take the first $k=0,4,8,12$ trials
+per class in recording order, giving 0, 16, 32, or 48 labels. Target runs~2--6
+(240 trials) form the fixed test set. No unused trial from the calibration
+run enters the test set.
+
+\textbf{Readout only.} The encoder and source-selected threshold are frozen.
+The ridge head is refitted on source-training plus calibration trials with
+equal trial weights; feature scaling and $\alpha$ remain fixed from the
+source-only fit. The zero-label baseline is already a source-fitted ridge
+head, rather than the original trained classifier. Accordingly, gains below
+measure the extra benefit of target labels after source-only refitting.
+
+\begin{table}[h]
+\centering\small\setlength{\tabcolsep}{5pt}
+\caption{Readout adaptation on a fixed target test set. Entries are mean BA
+(\%). The final column is the paired 48-minus-0-label gain, pp [95\% CI].
+The spiking modes use source-selected thresholds.}
+\begin{tabular}{llrrrrr}
+\toprule
+Method & Mode & 0 & 16 & 32 & 48 & Gain [95\% CI] \\
+\midrule
+% BEGIN GENERATED ADAPTATION ROWS
+Ordinary & Smooth & 43.08 & 43.51 & 43.72 & 44.33 & 1.25 [0.45, 2.12] \\
+Ordinary & Spikes & 40.19 & 40.49 & 41.09 & 41.49 & 1.30 [0.42, 2.37] \\
+Ordinary $2\times$ & Smooth & 43.38 & 43.75 & 44.19 & 44.19 & 0.81 [-0.09, 1.94] \\
+Ordinary $2\times$ & Spikes & 41.54 & 41.76 & 42.30 & 42.43 & 0.89 [0.17, 1.62] \\
+SAM & Smooth & 40.88 & 41.23 & 41.45 & 41.68 & 0.80 [-0.07, 1.60] \\
+SAM & Spikes & 38.90 & 39.11 & 39.38 & 39.35 & 0.45 [-0.20, 1.11] \\
+SAST & Smooth & 41.96 & 42.45 & 42.75 & 43.11 & 1.15 [0.48, 1.81] \\
+SAST & Spikes & 40.47 & 40.97 & 41.06 & 41.46 & 0.99 [0.43, 1.54] \\
+Direct hard & Spikes & 44.44 & 44.90 & 45.11 & 45.24 & 0.81 [0.32, 1.28] \\
+EEGNet & Native & 53.88 & 54.15 & 54.63 & 55.50 & 1.62 [0.94, 2.42] \\
+% END GENERATED ADAPTATION ROWS
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Threshold only.} All parameters, including the original head, are
+fixed. At zero labels the source-selected threshold is used; at positive
+budgets the same eight-candidate grid is selected by calibration-trial BA,
+with ties closest to the source threshold and then toward the smaller value.
+These zero-label baselines differ from the readout branch.
+
+\begin{table}[h]
+\centering\small
+\caption{Threshold-only adaptation, mean BA (\%), with the same fixed test
+set and label budgets. The final column is the paired 48-minus-0-label gain.}
+\begin{tabular}{lrrrrr}
+\toprule
+Method & 0 & 16 & 32 & 48 & Gain, pp [95\% CI] \\
+\midrule
+% BEGIN GENERATED THRESHOLD ROWS
+Ordinary & 32.72 & 32.30 & 32.06 & 32.31 & -0.42 [-1.94, 0.60] \\
+Ordinary $2\times$ & 33.44 & 33.31 & 32.67 & 33.45 & 0.01 [-0.42, 0.46] \\
+SAM & 32.18 & 32.34 & 32.48 & 33.00 & 0.82 [-0.14, 2.04] \\
+SAST & 33.02 & 32.46 & 32.78 & 33.26 & 0.24 [-0.74, 1.14] \\
+Direct hard & 42.97 & 40.13 & 41.22 & 42.44 & -0.54 [-1.30, 0.46] \\
+% END GENERATED THRESHOLD ROWS
+\bottomrule
+\end{tabular}
+\end{table}
+
+For calibrated SAST, 48 target labels add $0.99$ pp $[0.43,1.54]$ after
+source-only ridge refitting, compared with $0.24$ pp $[-0.74,1.14]$ for
+threshold-only adaptation. These increments are smaller than the source-only
+readout recovery in E2, but cannot be directly subtracted from E2 because
+the target test partitions differ. Calibration budgets, interventions,
+and secondary contrasts were not optimized on the held-out test trials.
+The approach assumes retained access to the source training data.
+
+\clearpage
+\section{Implementation audit and exploratory source alignment}
+\label{sec:audit}
+
+\textbf{Audit coverage.} The archived engine, local source, and engine embedded
+in the notebook have identical SHA-256 hashes. All 675 E1 participant/seed/mode
+BA values and predicted-class counts were recomputed from archived confusion
+matrices and agreed to numerical precision. For participant~1, seed~0,
+three checkpoints (SAST, matched ordinary, direct-hard) were replayed on CPU.
+All predictions matched across eight applicable mode evaluations; maximum
+absolute feature differences were below $6.6\times10^{-7}$.
+
+The sampled audit also reproduced training-only input normalization and
+all 24 source-validation threshold-grid scores, checked trial-state resets
+and inference-batch invariance, and confirmed that conversion left weights
+unchanged. An independent scalar recurrence agreed with the implemented
+smooth and hard dynamics. This audit found no discrepancy explaining the
+observed collapse within its tested scope. It was not an exhaustive replay
+of all 270 main checkpoints and did not retrain models.
+
+\textbf{Exploratory alignment.} To test whether simple feature offsets and
+scales could explain part of the mismatch, the original classifier was held
+fixed for the SAST and matched-ordinary checkpoints above. Let $\mu_r,\sigma_r$
+and $\mu_s,\sigma_s$ be per-feature source-training moments under raw and
+smooth dynamics. Mean-only correction uses
+$z'_r=z_r-\mu_r+\mu_s$. Mean-and-scale correction uses
+\[
+z'_r=(z_r-\mu_r)\odot
+\frac{\sigma_s}{\max(\sigma_r,10^{-6})}+\mu_s .
+\]
+Moments use the 240 source-training trials without their labels; no target
+labels or target moments enter the transform. These diagnostics were added
+after inspecting study outcomes and evaluated on a convenience sample of
+one participant and one seed, rather than across the full benchmark.
+
+\begin{table}[h]
+\centering\small
+\caption{Exploratory participant-1/seed-0 BA (\%) with the original head.
+These two checkpoints are illustrative and are not an aggregate result.}
+\begin{tabular}{lrrrr}
+\toprule
+Method & Raw & Mean only & Mean and scale & Smooth reference \\
+\midrule
+SAST & 25.35 & 38.89 & 47.57 & 53.47 \\
+Matched ordinary & 25.00 & 38.54 & 45.49 & 55.56 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For this SAST checkpoint, the mean across-feature trial standard deviation
+falls from 0.257 in smooth mode to 0.088 in raw mode; 41.2\% of raw
+time-averaged feature entries are zero. Spiking activity is therefore not
+universally absent. The alignment response is consistent with a readout
+mismatch involving feature moments, but does not establish a general repair
+method or isolate a causal mechanism. A full participant/seed evaluation
+of fixed source-moment correction remains unrun.
+
+\textbf{Interpretive limits.} The evidence concerns one dataset, one
+convolutional/LIF architecture, source-selected settings, and an offline
+participant-specific session shift. Probe success does not prove identical
+representations; residual probe differences do not identify all information
+loss. Artifact-free evaluation cannot rule out every ocular or muscle
+contribution. EEGNet and the FBCSP-style reference remain more accurate
+than the converted models under these implementations.
+No hardware energy, real-time latency, cross-participant transfer, or
+clinical efficacy was measured.
+
+\clearpage
+\section{Post-study classical decoding reference}
+\label{sec:fbcsp}
+
+\textbf{Scope and method.} An additional FBCSP-style reference follows the
+filter-bank/common spatial pattern (CSP) structure of Ang et al.\ \citep{ang}, adapted to the existing
+offline front end. The source-training runs~1--5, source-validation run~6,
+all-session-2 test set, cue epochs, channel scaling, and trial retention
+match E1/E2. Nine fourth-order Butterworth bands are applied forward/backward
+within each 125\,Hz epoch: 4--8, 8--12, 12--16, 16--20, 20--24, 24--28,
+28--32, 32--36, and 34--38\,Hz. The last band overlaps the preceding band
+to stay within 4--38\,Hz.
+
+Each band has four one-vs-rest CSP models, with four extreme components
+per model, covariance shrinkage 0.1, full rank, and no trace normalization.
+The 144 log-mean-square-power features are standardized with source-training
+statistics. Source-training mutual information (three neighbors; random
+seed 20261012) selects 8, 16, 32, or 64 features. Multiclass linear discriminant
+analysis (LDA) uses the
+least-squares solver and automatic covariance shrinkage. Validation BA
+selects a candidate, with ties resolved by validation log loss and then
+candidate order. The selected model is not refitted on validation trials.
+All nine source choices are locked before session~2 evaluation. This is one
+deterministic baseline per participant; EEGNet retains its original five-seed
+participant mean. The original FBCSP competition method used causal
+Chebyshev filtering and a Naive Bayesian Parzen Window classifier, so this
+reference is an adaptation rather than an exact reproduction.
+
+\textbf{Results.} FBCSP-style BA is 61.81\% [52.93, 70.06], compared with
+54.14\% [43.83, 64.21] for EEGNet. The paired participant-level difference is
+$+7.66$ pp [3.67, 11.91]. Intervals use the same 10,000 participant bootstrap
+resamples and seed as the original analysis. This comparison was added
+after the original study; its intervals are descriptive, not corrected for
+multiple comparisons, and do not replace the primary SAST contrast.
+
+\begin{center}\small
+\begin{tabular}{rrrrr}
+\toprule
+Participant & Features & FBCSP BA (\%) & EEGNet BA (\%) & Difference (pp) \\
+\midrule
+% BEGIN GENERATED FBCSP PARTICIPANT ROWS
+1 & 32 & 75.00 & 67.78 & +7.22 \\
+2 & 32 & 44.10 & 42.57 & +1.53 \\
+3 & 32 & 72.57 & 70.49 & +2.08 \\
+4 & 64 & 59.72 & 41.25 & +18.47 \\
+5 & 8 & 45.14 & 31.11 & +14.03 \\
+6 & 64 & 42.71 & 34.72 & +7.99 \\
+7 & 64 & 73.26 & 58.06 & +15.21 \\
+8 & 64 & 68.75 & 66.94 & +1.81 \\
+9 & 32 & 75.00 & 74.38 & +0.63 \\
+% END GENERATED FBCSP PARTICIPANT ROWS
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Provenance.} The completed baseline run is
+\texttt{FBCSP\_LDA\_fb436529d768932f}. It used Python 3.13.16,
+NumPy 2.1.3, SciPy 1.16.3, pandas 2.2.3, MNE 1.10.2, and scikit-learn 1.7.2.
+The engine SHA-256 is:
+\begin{center}\small\ttfamily
+4c694da2ab6d74d1dcb8a7428b5d240b\\
+f6572c2a71aea9d91f45403645722cd3
+\end{center}
+The archived engine matches the locally tested implementation. An independent
+export audit recomputed all nine BA scores and paired intervals from 2,592
+saved test predictions and checked model, selection, reference, and split
+records. Model files were hash-checked; the nine fits were not independently
+retrained for this audit.
+
+\subsection{Post-study EEGNet source-validation audit}
+
+The original EEGNet reference was audited without using target labels or changing
+the training procedure. All 45 main fits and 36 tuning fits completed 800 updates
+and 20 source-validation evaluations. Recomputed checkpoint choices and all nine
+optimizer-grid winners agree with the archive. Finite weights, spatial/head
+max-norm constraints, and BatchNorm update counts also pass. Across main fits,
+the median selected epoch is 80; 20/45 select epoch 90 or later, including 16/45
+at epoch 100. Minimum validation loss occurs at epoch 100 in 20/45 fits, and
+13/45 improve their best validation accuracy in the final 25 epochs.
+These histories do not establish convergence or that longer training would
+improve target-session performance. EEGNet is a reference under the common
+study budget and four-candidate source search, not a tuned benchmark ceiling.
+The audit script, all source learning curves, and input hashes accompany the release.
+
+\clearpage
+\section{Post-study second-architecture readout check}
+
+This exploratory check asks whether readout recovery also occurs in a structurally
+different spiking encoder. It uses the same nine participants, source/target session
+split, artifact retention, and offline preprocessing. It is not an independent
+dataset replication and does not repeat the SAST comparison.
+
+\textbf{Architecture and fixed protocol.} A 63-sample temporal convolution has
+eight filters shared across electrodes. Depthwise spatial filtering learns two
+electrode combinations per temporal filter, producing 16 channels. Average pooling
+by eight and GroupNorm(1) precede one LIF block (leak 0.9, threshold 1, zero initial
+state, subtractive previous-activity reset). Four temporal-bin averages form a
+64-dimensional feature vector and a linear four-class head. The encoder has
+1,164 trainable parameters. Linear spatial filtering is evaluated before temporal
+filtering to reduce intermediates; a reference-value and gradient check verifies
+the equivalent filter ordering. This differs from the original encoder's two LIF
+blocks, full spatial mixing, and one temporal average per final channel.
+
+Only ordinary smooth training is used. The original 800-update AdamW budget,
+batch sampling, cosine schedule, four learning-rate/weight-decay candidates,
+pilot seed 1000, and best-checkpoint rule are retained. Five main seeds per
+participant use the source-selected setting: 36 tuning fits and 45 main fits.
+Matched ridge heads are fitted separately to smooth and raw-spike features using
+the original source-training data and seven-value validation penalty grid.
+All participants' source fits and readout selections are locked before loading
+target sessions; file hashes are checked again after evaluation. Encoders remain
+frozen. No target labels tune the architecture, optimizer, checkpoint, or readout.
+
+The design was fixed before this check's target evaluation, after the original
+study and its classical reference had been inspected. It was not preregistered.
+Seeds are averaged within participant before the same 10,000-resample participant
+bootstrap. Smooth-refit recovery is retained as the control for generic refitting
+benefits; the excess raw recovery is a paired difference of recovery gains.
+
+% BEGIN GENERATED ARCHITECTURE SUMMARY
+Raw original-head BA is 27.44 [26.25, 28.78]\%; source-only raw-spike ridge BA is 37.55 [32.59, 42.61]\%, giving a paired gain of 10.11 [5.86, 14.29] pp. Smooth original-head BA is 36.44 [31.60, 41.57]\% and smooth-ridge BA is 39.46 [34.98, 43.85]\%, with gain 3.02 [0.70, 5.42] pp. The raw-minus-smooth matched-ridge contrast is -1.91 [-3.14, -0.61] pp; excess raw recovery over smooth recovery is 7.09 [2.01, 12.21] pp. Intervals are paired participant-bootstrap intervals. These estimates describe this architecture check; they do not add independent participants or establish generality across datasets.
+% END GENERATED ARCHITECTURE SUMMARY
+
+\begin{table}[h]
+\centering\small
+\caption{Second architecture: session~2 balanced accuracy (\%), averaged over five
+seeds within each participant. Original and ridge heads share the same frozen encoder.}
+\begin{tabular}{r r r r r}
+\toprule
+Participant & Smooth original & Smooth ridge & Raw original & Raw ridge \\
+\midrule
+% BEGIN GENERATED ARCHITECTURE ROWS
+1 & 40.56 & 43.19 & 29.38 & 43.40 \\
+2 & 26.11 & 28.89 & 26.11 & 25.07 \\
+3 & 51.67 & 51.25 & 31.67 & 51.88 \\
+4 & 30.49 & 40.83 & 27.85 & 36.25 \\
+5 & 26.11 & 32.78 & 24.79 & 28.96 \\
+6 & 34.86 & 31.46 & 27.08 & 32.29 \\
+7 & 35.90 & 38.89 & 27.99 & 35.90 \\
+8 & 41.18 & 43.82 & 25.62 & 41.74 \\
+9 & 41.11 & 44.03 & 26.46 & 42.43 \\
+% END GENERATED ARCHITECTURE ROWS
+\bottomrule
+\end{tabular}
+\end{table}
+
+\clearpage
+\section{Reproducibility, provenance, and declarations}
+
+The original run, \texttt{BNCI2014\_001\_ccebe0c6749374ab}, completed on
+13 October 2026 using NVIDIA L4, Python 3.13.15, and PyTorch 2.11.0+cu130.
+The CPU audit and second architecture use Python 3.12.12 and PyTorch 2.14.0;
+full dependency versions are archived with each run.
+The experiment-engine SHA-256 is:
+\begin{center}\small\ttfamily
+42ba021e26724e3e0d18ec77d1df765cc4380\\
+92cf487c2eb1b94b8d5a56aacde
+\end{center}
+% Concatenate the two hash lines without whitespace.
+
+Public reproduction package:\\
+\url{https://github.com/PluvioXO/ai4bci2026-readout}.\\
+Full run archives are versioned release assets. The package contains:
+\begin{itemize}
+\item \texttt{ai4bci\_all\_experiments.ipynb}: the standalone original experiment
+runner with its exact archived engine.
+\item \texttt{results/} and \texttt{build\_paper\_results.py}: per-seed outputs,
+training costs, and regeneration of paper figures, tables, and paired intervals.
+\item \texttt{conversion\_audit/}: numerical checks, sampled forward replay,
+and explicitly exploratory alignment results.
+\item \texttt{ai4bci\_fbcsp\_baseline.ipynb} and \texttt{results/fbcsp\_baseline/}:
+the classical runner, source selections, models, predictions, and export audit.
+\item \texttt{ai4bci\_readout\_replication.ipynb} and
+\texttt{results/architecture\_replication/}: the standalone second-architecture
+runner and its participant/seed results, intervals, fixed protocol, and export audit.
+\item \texttt{code/}: both neural engines, source-history and prediction audits,
+and preparation of the three-checkpoint conversion replay.
+\end{itemize}
+Full archives retain source configuration, input checksums, splits, histories,
+selected weights, features, predictions, and calibration identifiers. The main
+paper compiles independently with standard LaTeX and PGFPlots. Dataset recordings
+and prepared EEG epochs are not redistributed.
+
+\textbf{Relationship to other work.} SAST was introduced in the author's
+event-based and on-sensor spiking-network preprints \citep{nicholson,nicholsonOnSensor}. The present paper applies SAST to EEG motor imagery and
+adds a planned source-only readout analysis on frozen spiking features. The
+related UniReps manuscript, \emph{On Representational Fidelity Across Neural
+Dynamics: Does Flatness Preserve Continuous-to-Spiking Computation?}, is
+submitted but unpublished and addresses a separate question.
+
+\textbf{Data and ethics.} This is secondary analysis of publicly distributed
+EEG recordings; no new participants were recruited and no additional
+recordings were collected. The dataset is obtained from its original
+distribution and is cited in the main paper. No institutional approval or
+exemption number is asserted here. The applicable institutional secondary-analysis
+determination remains unconfirmed.
+
+\begin{thebibliography}{7}
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{0pt}
+\bibitem{brunner}
+C.~Brunner, R.~Leeb, G.~R.~M\"uller-Putz, A.~Schl\"ogl, and G.~Pfurtscheller.
+\href{https://www.bbci.de/competition/iv/desc_2a.pdf}{BCI Competition 2008---Graz
+data set A}. Dataset description, 2008.
+
+\bibitem{foret}
+P.~Foret, A.~Kleiner, H.~Mobahi, and B.~Neyshabur.
+\href{https://arxiv.org/abs/2010.01412}{Sharpness-Aware Minimization for
+Efficiently Improving Generalization}. ICLR, 2021.
+
+\bibitem{nicholson}
+M.~Nicholson. \href{https://arxiv.org/abs/2603.18039}{Sharpness Aware Surrogate
+Training for Spiking Neural Networks}. arXiv:2603.18039, 2026.
+
+\bibitem{nicholsonOnSensor}
+M.~Nicholson. \href{https://arxiv.org/abs/2604.09696}{Sharpness-Aware
+Surrogate Training for On-Sensor Spiking Neural Networks}.
+arXiv:2604.09696, 2026.
+
+\bibitem{lawhern}
+V.~J.~Lawhern et~al.
+\href{https://doi.org/10.1088/1741-2552/aace8c}{EEGNet: A compact convolutional
+neural network for EEG-based brain--computer interfaces}.
+J. Neural Eng., 15:056013, 2018.
+
+\bibitem{kornblith}
+S.~Kornblith, M.~Norouzi, H.~Lee, and G.~Hinton.
+\href{https://proceedings.mlr.press/v97/kornblith19a.html}{Similarity of Neural
+Network Representations Revisited}. ICML, pp.~3519--3529, 2019.
+
+\bibitem{ang}
+K.~K.~Ang, Z.~Y.~Chin, C.~Wang, C.~Guan, and H.~Zhang.
+\href{https://doi.org/10.3389/fnins.2012.00039}{Filter Bank Common Spatial Pattern
+Algorithm on BCI Competition IV Datasets 2a and 2b}. Front. Neurosci., 6:39, 2012.
+\end{thebibliography}
+\end{document}
